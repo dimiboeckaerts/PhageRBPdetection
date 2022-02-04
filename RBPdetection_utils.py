@@ -35,12 +35,9 @@ def hmmpress_python(hmm_path, pfam_file):
     
     # change directory
     cd_str = 'cd ' + hmm_path
-    cd_process = subprocess.Popen(cd_str, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    cd_out, cd_err = cd_process.communicate()
-    
-    # compress the profiles db
     press_str = 'hmmpress ' + pfam_file
-    press_process = subprocess.Popen(press_str, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    command = cd_str+'; '+press_str
+    press_process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     press_out, press_err = press_process.communicate()
 
     return press_out, press_err
@@ -51,14 +48,10 @@ def hmmbuild_python(hmm_path, output_file, msa_file):
     Build a profile HMM from an input multiple sequence alignment (Stockholm format).
     """
     
-    # change directory
-    cd_str = 'cd ' + hmm_path
-    cd_process = subprocess.Popen(cd_str, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    cd_out, cd_err = cd_process.communicate()
-    
-    # compress the profiles db
+    cd_str = 'cd ' + hmm_path # change dir
     press_str = 'hmmbuild ' + output_file + ' ' + msa_file
-    press_process = subprocess.Popen(press_str, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    command = cd_str+'; '+press_str
+    press_process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     press_out, press_err = press_process.communicate()
 
     return press_out, press_err
@@ -396,7 +389,7 @@ def RBP_domain_predict(path, pfam_file, sequences, structural=[], binding=[], ch
     return predictions_dict
 
 
-def RBPdetect_domains(path, pfam_file, sequences, identifiers, N_blocks=[], C_blocks=[]):
+def RBPdetect_domains(path, pfam_file, sequences, identifiers, N_blocks=[], C_blocks=[], detect_others=True):
     """
     This function serves as the main function to do domain-based RBP detection based on
     either a manually curated list of RBP-related Pfam domains or Pfam domains appended with 
@@ -440,7 +433,7 @@ def RBPdetect_domains(path, pfam_file, sequences, identifiers, N_blocks=[], C_bl
                     rangeC_sequence.append(ranges[j])
                 
                 # other block
-                elif (OM_score > OM_bias) and (dom not in N_blocks) and (dom not in C_blocks):
+                elif (detect_others == True) and (OM_score > OM_bias) and (dom not in N_blocks) and (dom not in C_blocks):
                     if ranges[j][1] <= 200:
                         N_sequence.append('other')
                         rangeN_sequence.append(ranges[j])
@@ -482,14 +475,12 @@ def cdhit_python(cdhit_path, input_file, output_file, c=0.50, n=3):
         - n: word length (3 for thresholds between 0.5 and 0.6)
     """
     
-    # change directory
-    cd_str = 'cd ' + cdhit_path
-    cd_process = subprocess.Popen(cd_str, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    cd_out, cd_err = cd_process.communicate()
-    
-    # run clustering
-    raw_str = 'cd-hit -i ' + input_file + ' -o ' + output_file + ' -c ' + str(c) + ' -n ' + str(n) + ' -d 0'
-    process = subprocess.Popen(raw_str, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    cd_str = 'cd ' + cdhit_path # change directory
+    raw_str = './cd-hit -i ' + input_file + ' -o ' + output_file + ' -c ' + str(c) + ' -n ' + str(n) + ' -d 0'
+    command = cd_str+'; '+ raw_str
+    #cd_process = subprocess.Popen(cd_str, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    #cd_out, cd_err = cd_process.communicate()
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout, stderr = process.communicate()
     
     return stdout, stderr
@@ -514,23 +505,17 @@ def clustalo_python(clustalo_path, input_file, output_file, out_format='fa'):
             as given output_file.
     """
     
-    # change directory
-    cd_str = 'cd ' + clustalo_path
-    cd_process = subprocess.Popen(cd_str, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    cd_out, cd_err = cd_process.communicate()
-    
-    # run clustal
-    raw_str = 'clustalo -i ' + input_file + ' -o ' + output_file + ' -v --outfmt ' + out_format
-    process = subprocess.Popen(raw_str, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    cd_str = 'cd ' + clustalo_path # change dir
+    raw_str = './clustalo -i ' + input_file + ' -o ' + output_file + ' -v --outfmt ' + out_format
+    command = cd_str+'; '+ raw_str
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout, stderr = process.communicate()
     
     return stdout, stderr
 
 
-def build_custom_HMMs(detected_RBPs, data_dir, cdpath):
+def build_custom_HMMs(detected_RBPs, data_dir, cd_path, hmm_path):
     """
-    TO TEST OUT
-
     This function builds new HMMs starting from a dataframe of detected RBPs.
 
     Input:
@@ -560,89 +545,300 @@ def build_custom_HMMs(detected_RBPs, data_dir, cdpath):
     unknown_C.close()
 
     # cluster fasta files with CD-HIT
-    print('CLustering with CD-HIT...')
+    print('Clustering with CD-HIT...')
     # os.mkdir(data_dir+'/clusters')
     input_N = data_dir+'/unknown_N_sequences.fasta'
     output_N = data_dir+'/clusters/unknown_N_sequences'
-    outN, errN = cdhit_python(cdpath, input_N, output_N)
+    outN, errN = cdhit_python(cd_path, input_N, output_N)
     input_C = data_dir+'/unknown_C_sequences.fasta'
-    output_C = data_dir+'/clusters/unknown_C_termini'
-    outC, errC = cdhit_python(cdpath, input_C, output_C)
-
+    output_C = data_dir+'/clusters/unknown_C_sequences'
+    outC, errC = cdhit_python(cd_path, input_C, output_C)
+    
     # make separate fastas for each cluster
-    clusters_unknown_N = open(data_dir+'/clusters/unknown_N_termini.clstr')
+    clusters_unknown_N = open(data_dir+'/clusters/unknown_N_sequences.clstr')
     sequences_N = []; ids_N = []
     for record in SeqIO.parse(input_N, 'fasta'): # get sequences in a list
         sequences_N.append(str(record.seq))
         ids_N.append(record.description) # sequences and ids match indices
-    cluster_iter = -1; cluster_sequences = []; cluster_identifiers = []; clusters_N = []
+    cluster_iter = -1; cluster_sequences = []; cluster_indices = []; clusters_N = []
     for line in clusters_unknown_N.readlines():
         if line[0] == '>': # new cluster
             if (cluster_iter >= 0) & (len(cluster_sequences) >= 5): # finish old if not the first
-                fasta = open(data_dir+'/clusters/unknown_N_termini_cluster_'+str(cluster_iter)+'.fasta', 'w')
+                fasta = open(data_dir+'/clusters/unknown_N_sequences_cluster_'+str(cluster_iter)+'.fasta', 'w')
                 for i, seq in enumerate(cluster_sequences):
-                    this_id = cluster_identifiers[i]
-                    fasta.write('>sequence_'+this_id+'\n'+seq+'\n')
+                    this_id = cluster_indices[i]
+                    fasta.write('>sequence_'+str(this_id)+'\n'+seq+'\n')
                 fasta.close()
                 clusters_N.append(str(cluster_iter))
             # initiate new cluster
             cluster_sequences = []; cluster_indices = []
             cluster_iter += 1
         else: # in a cluster
-            current_id = line.split('>')[1]
+            current_id = line.split('>')[1].split('...')[0]
             current_index = ids_N.index(current_id) #current_index = [i for i, description in enumerate(ids_N) if current_id == description]
             cluster_indices.append(current_index)
             cluster_sequences.append(sequences_N[current_index])
     
-    clusters_unknown_C = open(data_dir+'/clusters/unknown_C_termini.clstr')
+    clusters_unknown_C = open(data_dir+'/clusters/unknown_C_sequences.clstr')
     sequences_C = []; ids_C = []
     for record in SeqIO.parse(input_C, 'fasta'): # get sequences in a list
-        sequences_N.append(str(record.seq))
+        sequences_C.append(str(record.seq))
         ids_C.append(record.description) # sequences and ids match indices
-    cluster_iter = -1; cluster_sequences = []; cluster_identifiers = []; clusters_C = []
+    cluster_iter = -1; cluster_sequences = []; cluster_indices = []; clusters_C = []
     for line in clusters_unknown_C.readlines():
         if line[0] == '>': # new cluster
             if (cluster_iter >= 0) & (len(cluster_sequences) >= 5): # finish old if not the first
-                fasta = open(data_dir+'/clusters/unknown_C_termini_cluster_'+str(cluster_iter)+'.fasta', 'w')
+                fasta = open(data_dir+'/clusters/unknown_C_sequences_cluster_'+str(cluster_iter)+'.fasta', 'w')
                 for i, seq in enumerate(cluster_sequences):
-                    this_id = cluster_identifiers[i]
-                    fasta.write('>sequence_'+this_id+'\n'+seq+'\n')
+                    this_id = cluster_indices[i]
+                    fasta.write('>sequence_'+str(this_id)+'\n'+seq+'\n')
                 fasta.close()
                 clusters_C.append(str(cluster_iter))
             # initiate new cluster
             cluster_sequences = []; cluster_indices = []
             cluster_iter += 1
         else: # in a cluster
-            current_id = line.split('>')[1]
+            current_id = line.split('>')[1].split('...')[0]
             current_index = ids_C.index(current_id) #current_index = [i for i, description in enumerate(ids_C) if current_id == description]
             cluster_indices.append(current_index)
             cluster_sequences.append(sequences_C[current_index])
-
+            
     # construct MSA for each cluster
     print('Building MSAs...')
     # os.mkdir(data_dir+'/clustalo')
     for cluster in clusters_N:
-        infile = data_dir+'/clusters/unknown_N_termini_cluster_'+cluster+'.fasta'
-        outfile = data_dir+'/clustalo/unknown_N_termini_MSA_clst_'+cluster+'.sto'
+        infile = data_dir+'/clusters/unknown_N_sequences_cluster_'+cluster+'.fasta'
+        outfile = data_dir+'/clustalo/unknown_N_sequences_MSA_clst_'+cluster+'.sto'
         Nout, Nerr = clustalo_python(data_dir+'/clustalo', infile, outfile, out_format='st')
+        print(Nout)
     for cluster in clusters_C:
-        infile = data_dir+'/unknown_C_termini_cluster_'+cluster+'.fasta'
-        outfile = data_dir+'/clustalo/unknown_C_termini_MSA_clst_'+cluster+'.sto'
+        infile = data_dir+'/clusters/unknown_C_sequences_cluster_'+cluster+'.fasta'
+        outfile = data_dir+'/clustalo/unknown_C_sequences_MSA_clst_'+cluster+'.sto'
         Cout, Cerr = clustalo_python(data_dir+'/clustalo', infile, outfile, out_format='st')
-
+        
     # construct new HMM for each cluster
     print('Building HMMs...')
     # os.mkdir(data_dir+'/profiles')
     for cluster in clusters_N:
-        outfile = data_dir+'/profiles/unknown_N_termini_'+cluster+'.hmm'
-        msafile = data_dir+'/clustalo/unknown_N_termini_MSA_clst_'+cluster+'.sto'
+        outfile = data_dir+'/profiles/unknown_N_sequences_'+cluster+'.hmm'
+        msafile = data_dir+'/clustalo/unknown_N_sequences_MSA_clst_'+cluster+'.sto'
         bout, berr = hmmbuild_python(path, outfile, msafile)
     for cluster in clusters_C:
-        outfile = data_dir+'/profiles/unknown_C_termini_'+cluster+'.hmm'
-        msafile = data_dir+'/clustalo/unknown_C_termini_MSA_clst_'+cluster+'.sto'
-        bout, berr = hmmbuild_python(path, outfile, msafile)
+        outfile = data_dir+'/profiles/unknown_C_sequences_'+cluster+'.hmm'
+        msafile = data_dir+'/clustalo/unknown_C_sequences_MSA_clst_'+cluster+'.sto'
+        bout, berr = hmmbuild_python(hmm_path, outfile, msafile)
 
     print('Done.')
+    return
+
+
+def RBP_collection(MillardLab_tsv, MillardLab_genbank, directory):
+    """
+    This function loops over the filtered and unfiltered phage genome data of MillardLab to construct a collection of 
+    (unfiltered) RBP and nonRBP sequence records for further analysis.
+    
+    Input:
+    - MillardLab_tsv: handle (string) to the filtered tsv file of MillardLab phage genomes
+    - MillardLab_genbank: handle (string) to the unfiltered phage genomes downloaded from NCBI by MillardLab
+    - directory: string of location to store the sequence file at.
+
+    Output: Dataframes of RBPs and nonRBPs
+    """
+
+    # load input data & make dict
+    tsv_data = pd.read_csv(MillardLab_tsv, sep='\t')
+    records = SeqIO.parse(MillardLab_genbank, 'gb')
+    rbp_dict = {'phage_id':[], 'protein_id': [], 'Organism': [], 'Host':[], 'ProteinName': [], 'ProteinSeq': [], 
+                'DNASeq': [], 'RecordDate': []}
+    nonrbp_dict = {'phage_id':[], 'protein_id': [], 'Organism': [], 'Host':[], 'ProteinName': [], 'ProteinSeq': [], 
+                'DNASeq': [], 'RecordDate': []}
+    rbp_re = r'tail.?(?:spike|fib(?:er|re))|^recept(?:o|e)r.?(?:binding|recognizing).*(?:protein)?|^RBP'
+
+    # loop over all records
+    stop_iter = 0
+    while stop_iter >= 0:
+        try:
+            record = next(records)
+            rindex = list(tsv_data['Accession']).index(record.name)
+            record_realm = tsv_data['Realm'][rindex]
+            # if in filtered tsv data and is phage, check the CDSs
+            if (record.name in list(tsv_data['Accession'])) and (record_realm in ['Duplodnaviria', 'Unclassified']):
+                host = '-'
+                if 'host' in record.features[0].qualifiers:
+                    host = record.features[0].qualifiers['host'][0]
+                elif 'lab_host' in record.features[0].qualifiers:
+                    host = record.features[0].qualifiers['lab_host'][0]
+                elif 'strain' in record.features[0].qualifiers:
+                    host = record.features[0].qualifiers['strain'][0]
+                org = record.annotations['organism']
+                date = record.annotations['date']
+                
+                # look for the CDSs and get their infos
+                for feature in record.features:
+                    if feature.type == 'CDS':
+                        try:
+                            pname = feature.qualifiers['product'][0]
+                            pseq = feature.qualifiers['translation'][0]
+                            dnaseq = str(feature.location.extract(record).seq)
+                            pid = feature.qualifiers['protein_id'][0]
+                            
+                            # collect in RBPs or nonRBPs
+                            if re.search(rbp_re, pname, re.IGNORECASE) is not None:
+                                rbp_dict['phage_id'].append(record.name)
+                                rbp_dict['protein_id'].append(pid)
+                                rbp_dict['Organism'].append(org)
+                                rbp_dict['Host'].append(host)
+                                rbp_dict['ProteinName'].append(pname)
+                                rbp_dict['ProteinSeq'].append(pseq)
+                                rbp_dict['DNASeq'].append(dnaseq)
+                                rbp_dict['RecordDate'].append(date)
+                            else:
+                                nonrbp_dict['phage_id'].append(record.name)
+                                nonrbp_dict['protein_id'].append(pid)
+                                nonrbp_dict['Organism'].append(org)
+                                nonrbp_dict['Host'].append(host)
+                                nonrbp_dict['ProteinName'].append(pname)
+                                nonrbp_dict['ProteinSeq'].append(pseq)
+                                nonrbp_dict['DNASeq'].append(dnaseq)
+                                nonrbp_dict['RecordDate'].append(date)    
+                        except KeyError:
+                            pass
+                        
+            stop_iter += 1         
+            if stop_iter%1000 == 0:
+                print('iteration:', stop_iter)
+        except StopIteration:
+            stop_iter = -1
+        except:
+            pass
+    
+    # make dataframe and save
+    annotated_rbps = pd.DataFrame(data=rbp_dict)
+    annotated_nonrbps = pd.DataFrame(data=nonrbp_dict)
+    annotated_rbps.to_csv(directory+'/annotated_RBPs_unfiltered.csv', index=False)
+    annotated_nonrbps.to_csv(directory+'/annotated_nonRBPs_unfiltered.csv', index=False)
+    print('Wrote RBP and nonRBP databases to directory.')
+
+    return
+
+
+def RBP_filters(RBPs_unfiltered, nonRBPs_unfiltered, directory, timestamp):
+    """
+    This function applies several data processing filters to both the annotated RBP and annotated nonRBP set.
+    
+    Inputs:
+    - RBPs_unfiltered: unfiltered annotated RBPs, DataFrame
+    - nonRBPs_unfiltered: unfiltered annotated nonRBPs, DataFrame
+    - directory: to store output files in
+    - timestamp: current month/year for saving (e.g. '2020-01')
+    
+    Output: filtered RBP and nonRBP databases
+    """
+    to_delete_rbps = []
+    to_delete_nonrbps = []
+    keywords = ['adaptor','wedge','baseplate','hinge','connector','structural','component',
+                'assembly','chaperone','attachment','capsid','proximal','measure']
+    hypotheticals = ['probable','probably','uncharacterized','uncharacterised','putative',
+                     'hypothetical','unknown','predicted']
+    
+    # loop over RBPs
+    for i, rbpseq in enumerate(RBPs_unfiltered['ProteinSeq']):
+        rbpname = RBPs_unfiltered['ProteinName'][i]
+        
+        # filter unknown AAs
+        if re.search(r'[^ACDEFGHIKLMNPQRSTVWY]', rbpseq) is not None:
+            to_delete_rbps.append(i)
+        # filter keywords
+        if any(key in rbpname.lower() for key in keywords):
+            to_delete_rbps.append(i)
+        # filter length
+        if (len(rbpseq) < 200) or (len(rbpseq) > 2000):
+            to_delete_rbps.append(i)
+            
+    # loop over nonRBPs
+    for i, nonrbpseq in enumerate(nonRBPs_unfiltered['ProteinSeq']):
+        nonrbpname = nonRBPs_unfiltered['ProteinName'][i]
+        
+        # filter unknown AAs
+        if re.search(r'[^ACDEFGHIKLMNPQRSTVWY]', nonrbpseq) is not None:
+            to_delete_nonrbps.append(i)
+        # filter hypotheticals
+        if any(hyp in nonrbpname.lower() for hyp in hypotheticals):
+            to_delete_nonrbps.append(i)
+        # filter length
+        if len(nonrbpseq) < 30:
+            to_delete_nonrbps.append(i)
+            
+    # delete
+    to_delete_rbps = list(set(to_delete_rbps))
+    to_delete_nonrbps = list(set(to_delete_nonrbps))
+    RBPs = RBPs_unfiltered.drop(to_delete_rbps)
+    RBPs = RBPs.reset_index(drop=True)
+    nonRBPs = nonRBPs_unfiltered.drop(to_delete_nonrbps)
+    nonRBPs = nonRBPs.reset_index(drop=True)
+    
+    # filter identicals
+    RBPs.drop_duplicates(subset = ['ProteinSeq'], inplace = True)
+    nonRBPs.drop_duplicates(subset = ['ProteinSeq'], inplace = True)
+    
+    # filter dubious ones (RBP-nonRBPs identicals)
+    to_delete_dubiousRBPs = [i for i, sequence in enumerate(RBPs['ProteinSeq']) if sequence in nonRBPs['ProteinSeq']]
+    to_delete_dubiousnonRBPs = [i for i, sequence in enumerate(nonRBPs['ProteinSeq']) if sequence in RBPs['ProteinSeq']]
+    RBPs = RBPs.drop(to_delete_dubiousRBPs)
+    RBPs = RBPs.reset_index(drop=True)
+    nonRBPs = nonRBPs.drop(to_delete_dubiousnonRBPs)
+    nonRBPs = nonRBPs.reset_index(drop=True)
+    print(RBPs.shape, nonRBPs.shape)
+    
+    # save new databases
+    RBPs.to_csv(directory+'/annotated_RBPs_'+timestamp+'.csv', index=False)
+    nonRBPs.to_csv(directory+'/annotated_nonRBPs_'+timestamp+'.csv', index=False)
+    print('Wrote filtered databases to directory.')
+    
+    return
+
+
+def phanns_predict(sequences_df, phanns_dir, results_dir, suffix=''):
+    """
+    This function predicts the class of a bunch of sequences using PhANNs models (cfr. Cantu et al., 2020)
+    
+    Input:
+    - sequences_df: a dataframe with protein sequences (ProteinSeq) and corresponding ids (protein_id)
+        to make predictions for.
+    - phanns_dir: the directory of the web_server module of the PhANNs repository
+    """
+    
+    # save all the sequences as separate fastas in the /uploads directory of PhANNs
+    for i, sequence in enumerate(sequences_df['ProteinSeq']):
+        # write FASTA file in directory
+        this_id = list(sequences_df['protein_id'])[i]
+        fasta = open(phanns_dir+'/uploads/'+this_id+'.fasta', 'w')
+        fasta.write('>'+this_id+'\n'+sequence+'\n')
+        fasta.close()
+    
+    # run PhANNs predictions
+    cd_str = 'cd ' + phanns_dir # change directory
+    raw_str = 'python run_server_once.py'
+    command = cd_str+'; '+ raw_str
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    stdout, stderr = process.communicate()
+    
+    # save results to a dataframe for later comparisons
+    print('Getting results...')
+    phanns_preds = []; phanns_score = []
+    for this_id in sequences_df['protein_id']:
+        this_result = pd.read_csv(phanns_dir+'/csv_saves/'+this_id+'.csv', index_col=0)
+        this_class = this_result.idxmax(axis=1)[0]
+        if this_class == 'Tail fiber':
+            phanns_preds.append(1)
+        else:
+            phanns_preds.append(0)
+        phanns_score.append(this_result['Confidence'][0])
+        
+    phanns_df = pd.DataFrame({'preds': phanns_preds, 'score': phanns_score})
+    phanns_df.to_csv(results_dir+'/phanns_predictions'+suffix+'.csv', index=False)
+    print('Done.')
+    
     return
 
 
