@@ -1,6 +1,8 @@
 """
 DOMAIN-BASED RBP DETECTION
 
+!! DEPRECATED !! (for reference purposes only)
+
 Created on Tue Sep  1 18:47:06 2020
 
 @author: dimiboeckaerts
@@ -21,9 +23,6 @@ from Bio import Entrez
 from Bio.Seq import Seq
 import matplotlib.pyplot as plt
 from Bio.Blast import NCBIWWW, NCBIXML
-
-import phagebase_utils as pbu
-
     
 # 1 - BASIC TESTS
 # --------------------------------------------------

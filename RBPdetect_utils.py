@@ -19,6 +19,7 @@ from Bio import SeqIO
 from Bio import Entrez
 from Bio.Seq import Seq
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatch
 from Bio.Blast import NCBIWWW, NCBIXML
 import time
 import urllib
@@ -100,7 +101,6 @@ def hmmscan_python(hmm_path, pfam_file, sequences_file, threshold=18):
     scores = []
     biases = []
     ranges = []
-    count_dict = {}
     for sequence in SeqIO.parse(sequences_file, 'fasta'):
         # make single-sequence FASTA file
         temp_fasta = open('single_sequence.fasta', 'w')
@@ -123,9 +123,6 @@ def hmmscan_python(hmm_path, pfam_file, sequences_file, threshold=18):
                         scores.append(hit.bitscore)
                         biases.append(hit.bias)
                         ranges.append((aln_start,aln_stop))
-                        count_dict[hit.id] = 1
-                    elif (hit.bitscore >= threshold) & (hit.id in domains):
-                        count_dict[hit.id] += 1
             except IndexError: # some hits don't have an individual domain hit
                 pass
     
@@ -460,6 +457,103 @@ def RBPdetect_domains(path, pfam_file, sequences, identifiers, N_blocks=[], C_bl
     return detected_RBPs
 
 
+def RBPdetect_domains_protein(path, pfam_file, fasta_file, N_blocks=[], C_blocks=[], detect_others=True):
+    """
+    Same function as above but for a protein FASTA file as input!
+
+    Inputs:
+    - path: path to HMM software for detection of the domains
+    - pfam_file: path to local Pfam database file (string)
+    - fasta_file: path to sequences FASTA file (string)
+    - N_blocks: list of structural (N-terminal) domains as strings (corresponding to names in Pfam database)
+    - C_blocks: list of binding (C-terminal) domains as strings (corresponding to names in Pfam database)
+
+    Output:
+    - a dataframe of RBPs
+    """
+    N_list = []; C_list = []
+    rangeN_list = []; rangeC_list = []
+    sequences_list = []; identifiers_list = []
+    sequences = [str(record.seq) for record in SeqIO.parse(fasta_file, 'fasta')]
+    names = [record.id for record in SeqIO.parse(fasta_file, 'fasta')]
+    bar = tqdm(total=len(sequences), leave=True, desc='Scanning the proteins')
+    
+    for i, sequence in enumerate(sequences):
+        N_sequence = []; C_sequence = []
+        rangeN_sequence = []; rangeC_sequence = []
+        
+        # make single-sequence FASTA file
+        temp_fasta = open('single_sequence.fasta', 'w')
+        temp_fasta.write('>'+names[i]+'\n'+sequence+'\n')
+        temp_fasta.close()
+        
+        # scan HMM
+        _, _, scan_res = single_hmmscan_python(path, pfam_file, 'single_sequence.fasta')
+
+        # fetch domains in the results
+        domains = []; scores = []; biases = []; ranges = []
+        for line in scan_res:   
+            try:   
+                for hit in line.hits:
+                    hsp = hit._items[0] # highest scoring domain
+                    aln_start = hsp.query_range[0]
+                    aln_stop = hsp.query_range[1]
+
+                    if (hit.bitscore >= 18) & (hit.id not in domains):
+                        domains.append(hit.id)
+                        scores.append(hit.bitscore)
+                        biases.append(hit.bias)
+                        ranges.append((aln_start,aln_stop))
+            except IndexError: # some hits don't have an individual domain hit
+                pass
+        
+        # remove temp fasta file
+        os.remove('single_sequence.fasta')
+        
+        # loop over the domains, if any
+        if len(domains) > 0:
+            for j, dom in enumerate(domains):
+                OM_score = math.floor(math.log(scores[j], 10)) # order of magnitude
+                OM_bias = math.floor(math.log(biases[j]+0.00001, 10))
+                
+                # N-terminal block
+                if (OM_score > OM_bias) and (dom in N_blocks):
+                    N_sequence.append(dom)
+                    rangeN_sequence.append(ranges[j])
+                
+                # C-terminal block
+                elif (OM_score > OM_bias) and (dom in C_blocks) and (scores[j] >= 25):
+                    C_sequence.append(dom)
+                    rangeC_sequence.append(ranges[j])
+                
+                # other block
+                elif (detect_others == True) and (OM_score > OM_bias) and (dom not in N_blocks) and (dom not in C_blocks):
+                    if ranges[j][1] <= 200:
+                        N_sequence.append('other')
+                        rangeN_sequence.append(ranges[j])
+                    elif (ranges[j][1] > 200) and (scores[j] >= 25):
+                        C_sequence.append('other')
+                        rangeC_sequence.append(ranges[j])
+                 
+            # add to the global list
+            if (len(N_sequence) > 0) or (len(C_sequence) > 0):
+                N_list.append(N_sequence)
+                C_list.append(C_sequence)
+                rangeN_list.append(rangeN_sequence)
+                rangeC_list.append(rangeC_sequence)
+                sequences_list.append(sequence)
+                identifiers_list.append(names[i])
+
+        # update bar
+        bar.update(1)
+    bar.close()
+
+    # make dataframe
+    detected_RBPs = pd.DataFrame({'identifier':identifiers_list, 'DNASeq':sequences_list, 'N_blocks':N_list, 'C_blocks':C_list, 
+                                'N_ranges':rangeN_list, 'C_ranges':rangeC_list})
+    return detected_RBPs
+
+
 def cdhit_python(cdhit_path, input_file, output_file, c=0.50, n=3):
     """
     This function executes CD-HIT clustering commands from within Python. To install
@@ -610,7 +704,6 @@ def build_custom_HMMs(detected_RBPs, data_dir, cd_path, hmm_path):
         infile = data_dir+'/clusters/unknown_N_sequences_cluster_'+cluster+'.fasta'
         outfile = data_dir+'/clustalo/unknown_N_sequences_MSA_clst_'+cluster+'.sto'
         Nout, Nerr = clustalo_python(data_dir+'/clustalo', infile, outfile, out_format='st')
-        print(Nout)
     for cluster in clusters_C:
         infile = data_dir+'/clusters/unknown_C_sequences_cluster_'+cluster+'.fasta'
         outfile = data_dir+'/clustalo/unknown_C_sequences_MSA_clst_'+cluster+'.sto'
@@ -622,7 +715,7 @@ def build_custom_HMMs(detected_RBPs, data_dir, cd_path, hmm_path):
     for cluster in clusters_N:
         outfile = data_dir+'/profiles/unknown_N_sequences_'+cluster+'.hmm'
         msafile = data_dir+'/clustalo/unknown_N_sequences_MSA_clst_'+cluster+'.sto'
-        bout, berr = hmmbuild_python(path, outfile, msafile)
+        bout, berr = hmmbuild_python(hmm_path, outfile, msafile)
     for cluster in clusters_C:
         outfile = data_dir+'/profiles/unknown_C_sequences_'+cluster+'.hmm'
         msafile = data_dir+'/clustalo/unknown_C_sequences_MSA_clst_'+cluster+'.sto'
@@ -840,6 +933,94 @@ def phanns_predict(sequences_df, phanns_dir, results_dir, suffix=''):
     print('Done.')
     
     return
+
+
+def protein_architecture_plot(sequences, domains, locations, label_dict=[], count_threshold=0, save_fig=False):
+    """
+    Plots the different architectures (combinations of modules) for a given
+    set of proteins, domains and their locations.
+
+    Input:
+    - sequences: list of protein sequences to plot
+    - domains: list of lists with the domain names for each protein
+    - locations: list of lists of tuples with the location of each corresponding domain
+    - label_dict: optional dict with categories for labels {domain1: labelx, domain2: labely, ...}
+    - count_threshold: threshold under which not to plot the domains, based on the number of occurrences
+    - save_fig: option to save the figure
+    """
+    # initiations
+    y_place = 0
+    protein_lengths = [round(len(x)) for x in sequences]
+    unique_combos = [list(x) for x in set(tuple(x) for x in domains)] # get unique combos
+    domain_counts = [domains.count(x) for x in unique_combos] # count unique combos
+    sorted_unique_combos = [(x,y) for y, x in sorted(zip(domain_counts, unique_combos))] # sort
+    sorted_unique_combos = [combo for combo in sorted_unique_combos if combo[1] > count_threshold] # delete under thres
+
+    # give all unique domains or labels a separate color
+    merged_domains = [dom for current_domains in sorted_unique_combos for dom in current_domains[0]]
+    unique_domains = list(set(merged_domains))
+    if len(label_dict) > 0:
+        label_dict = dict([(dom, label_dict[dom]) for dom in label_dict.keys() if dom in unique_domains])
+        unique_labels = list(set(label_dict.values()))
+        cmap = plt.cm.turbo(np.linspace(0.0, 1.0, len(unique_labels)))
+        cdict = dict([(label, cmap[i]) for i, label in enumerate(unique_labels)])
+    else:
+        cmap = plt.cm.turbo(np.linspace(0.0, 1.0, len(unique_domains)))
+        cdict = dict([(dom, cmap[i]) for i, dom in enumerate(unique_domains)])
+
+    # set up plot and params
+    y_count = max(5, int(len(sorted_unique_combos)/4))
+    y_box = int(y_count*0.6)
+    x_count = min(200, max(protein_lengths))
+    x_legend = min(800, max(protein_lengths))
+    fig, ax = plt.subplots(figsize=(8,y_count))
+
+    # loop over unique combos and plot
+    protein_lengths = []
+    for i, current in enumerate(sorted_unique_combos):
+        current_domains = current[0]
+        current_count = current[1]
+        y_place += y_count
+        index = domains.index(current_domains)
+        current_protein = sequences[index]
+        current_locations = locations[index]
+        backbone_length = round(len(current_protein))
+        protein_lengths.append(backbone_length)
+
+        # plot backbone
+        backbone = plt.Rectangle((x_count, y_place), backbone_length, y_count*0.1, fc='grey')
+        ax.add_patch(backbone)
+        ax.annotate(str(current_count), xy=(1, y_place-(y_box/2)))
+
+        # loop over domains
+        for j, dom in enumerate(current_domains):
+            # plot each domain at correct location
+            loc = current_locations[j]
+
+            if len(label_dict) > 0:
+                current_label = label_dict[dom]
+                current_color = cdict[current_label]
+            else:
+                current_label = dom
+                current_color = cdict[dom]
+            patch = mpatch.FancyBboxPatch((x_count+loc[0], y_place-(y_box/2)), loc[1]-loc[0], y_box, 
+                boxstyle='Round, pad=0.2, rounding_size=0.8', fc=current_color, label=current_label)
+            ax.add_patch(patch)
+    ax.set_xlim(0, x_count+max(protein_lengths)+x_legend)
+
+    ax.set_ylim(0, y_place+max(10,y_count))
+    handles, labels = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    ax.legend(by_label.values(), by_label.keys())
+    ax.axis('off')
+    #ax.set_title('Protein domain architectures', size=14)
+
+    if save_fig:
+        fig.savefig('protein_architecture_plot.png', dpi=400)
+
+    fig.show()
+
+    return sorted_unique_combos
 
 
 # 2 - EXAMPLE
