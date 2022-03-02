@@ -12,4 +12,4 @@ The repository contains the following code and data:
 6. <ins>data</ins>: folder containing the trained XGBoost model, the collection of RBP-related HMMs and an examples FASTA file
 
 
-To get started making predictions for your own sequences of choice, simply clone/copy/download this repository and open the *RBPdetect_make_predictions* notebook and follow the instructions. If you are new to jupyter notebooks, one of the easiest ways to get started is by installing [Anaconda](https://www.anaconda.com/products/individual).
+To get started making predictions for your own sequences of choice, simply clone/copy/download this repository and open the *RBPdetect_make_predictions* notebook and follow the instructions. If you are new to Jupyter notebooks, one of the easiest ways to get started is by installing [Anaconda](https://www.anaconda.com/products/individual).
