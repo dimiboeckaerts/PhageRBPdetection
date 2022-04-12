@@ -18,6 +18,7 @@ from tqdm.notebook import tqdm
 from Bio import SeqIO
 from Bio import Entrez
 from Bio.Seq import Seq
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatch
 from Bio.Blast import NCBIWWW, NCBIXML
@@ -944,7 +945,7 @@ def protein_architecture_plot(sequences, domains, locations, label_dict=[], coun
     - sequences: list of protein sequences to plot
     - domains: list of lists with the domain names for each protein
     - locations: list of lists of tuples with the location of each corresponding domain
-    - label_dict: optional dict with categories for labels {domain1: labelx, domain2: labely, ...}
+    - label_dict: optional dict with categories for labels {labelx: [domain1, ...], labely: [...], ...}
     - count_threshold: threshold under which not to plot the domains, based on the number of occurrences
     - save_fig: option to save the figure
     """
@@ -960,13 +961,19 @@ def protein_architecture_plot(sequences, domains, locations, label_dict=[], coun
     merged_domains = [dom for current_domains in sorted_unique_combos for dom in current_domains[0]]
     unique_domains = list(set(merged_domains))
     if len(label_dict) > 0:
-        label_dict = dict([(dom, label_dict[dom]) for dom in label_dict.keys() if dom in unique_domains])
-        unique_labels = list(set(label_dict.values()))
-        cmap = plt.cm.turbo(np.linspace(0.0, 1.0, len(unique_labels)))
-        cdict = dict([(label, cmap[i]) for i, label in enumerate(unique_labels)])
+        for key in label_dict.keys():
+            new_domains = [value for value in label_dict[key] if value in unique_domains]
+            label_dict[key] = new_domains
+        cmap_names = ['Blues', 'Greens', 'Oranges', 'Purples', 'Reds']
+        colors_per_label = [plt.get_cmap(cmap_names[i])(np.linspace(0.8,0.4,len(label_dict[label]))) 
+                                                  for i, label in enumerate(list(label_dict.keys()))]
+        colors_dict = {}
+        for i, unique_label in enumerate(list(label_dict.keys())):
+            for j, domain in enumerate(label_dict[unique_label]):
+                colors_dict[domain] = colors_per_label[i][j]
     else:
         cmap = plt.cm.turbo(np.linspace(0.0, 1.0, len(unique_domains)))
-        cdict = dict([(dom, cmap[i]) for i, dom in enumerate(unique_domains)])
+        colors_dict = dict([(dom, cmap[i]) for i, dom in enumerate(unique_domains)])
 
     # set up plot and params
     y_count = max(5, int(len(sorted_unique_combos)/4))
@@ -998,22 +1005,28 @@ def protein_architecture_plot(sequences, domains, locations, label_dict=[], coun
             loc = current_locations[j]
 
             if len(label_dict) > 0:
-                current_label = label_dict[dom]
-                current_color = cdict[current_label]
+                current_label = [key for key, value in label_dict.items() if (dom in value)][0]
+                current_color = colors_dict[dom]
             else:
                 current_label = dom
-                current_color = cdict[dom]
+                current_color = colors_dict[dom]
             patch = mpatch.FancyBboxPatch((x_count+loc[0], y_place-(y_box/2)), loc[1]-loc[0], y_box, 
                 boxstyle='Round, pad=0.2, rounding_size=0.8', fc=current_color, label=current_label)
             ax.add_patch(patch)
-    ax.set_xlim(0, x_count+max(protein_lengths)+x_legend)
+    ax.set_xlim(0, x_count+max(protein_lengths) +x_legend/4)
 
     ax.set_ylim(0, y_place+max(10,y_count))
     handles, labels = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
-    ax.legend(by_label.values(), by_label.keys())
+    #ax.legend(by_label.values(), by_label.keys())
     ax.axis('off')
     #ax.set_title('Protein domain architectures', size=14)
+    for i, label in enumerate(list(label_dict.keys())):
+        cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=mpl.colors.Normalize(),cmap=plt.get_cmap(cmap_names[i])), 
+                     ax=ax, fraction=0.03+0.0015*i, pad=0.02)
+        cbar.ax.set_ylabel(label, rotation=270, labelpad=-2.5)
+        cbar.ax.get_yaxis().set_ticks([])
+    #fig.tight_layout()
 
     if save_fig:
         fig.savefig('protein_architecture_plot.png', dpi=400)
