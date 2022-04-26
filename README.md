@@ -1,7 +1,7 @@
 # PhageRBPdetection
 
 This is the repository related to our manuscript in submission:
-"Dual identification of novel phage receptor-binding proteins based on protein domains and machine learning".
+"Identification of phage receptor-binding protein sequences with hidden Markov models and an extreme gradient boosting classifier".
 
 The repository contains the following code and data:
 1. <ins>RBPdetect_notebook</ins>: the main notebook containing all the analyses that are discussed in the manuscript.
