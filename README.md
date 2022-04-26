@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/417444396.svg)](https://zenodo.org/badge/latestdoi/417444396)
+
 # PhageRBPdetection
 
 This is the repository related to our manuscript in submission:
