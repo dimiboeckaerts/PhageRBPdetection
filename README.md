@@ -2,7 +2,7 @@
 
 # PhageRBPdetection
 
-This is the repository related to our manuscript in submission:
+This is the repository related to our manuscript in submission for the special issue 'Virus Bioinformatics 2022' in *Viruses*:
 "Identification of phage receptor-binding protein sequences with hidden Markov models and an extreme gradient boosting classifier".
 
 The repository contains the following code and data:
