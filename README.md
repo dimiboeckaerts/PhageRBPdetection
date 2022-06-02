@@ -15,3 +15,5 @@ The repository contains the following code and data:
 
 
 To get started making predictions for your own sequences of choice, simply clone/copy/download this repository and open the *RBPdetect_make_predictions* notebook and follow the instructions. If you are new to Jupyter notebooks, one of the easiest ways to get started is by installing [Anaconda](https://www.anaconda.com/products/individual).
+
+To reproduce our analyses with the originally collected datasets, you can download these datasets from Zenodo at https://doi.org/10.5281/zenodo.6607535.
