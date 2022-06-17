@@ -4,7 +4,7 @@
 
 This is the repository related to our published manuscript in the special issue 'Virus Bioinformatics 2022' in *Viruses*:
 "Identification of phage receptor-binding protein sequences with hidden Markov models and an extreme gradient boosting classifier". 
-Read and/or download the manuscript here: https://www.mdpi.com/1999-4915/14/6/1329
+Read and/or download the manuscript here: https://www.mdpi.com/1999-4915/14/6/1329.
 
 The repository contains the following code and data:
 1. <ins>RBPdetect_notebook</ins>: the main notebook containing all the analyses that are discussed in the manuscript.
