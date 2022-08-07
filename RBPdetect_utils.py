@@ -131,6 +131,49 @@ def hmmscan_python(hmm_path, pfam_file, sequences_file, threshold=18):
     os.remove('single_sequence.fasta')
 
     return domains, scores, biases, ranges
+
+
+def hmmscan_python_from_string(hmm_path, pfam_file, sequence, threshold=18):
+    """
+    Expanded version of the single_hmmscan_pythob for a string of a protein sequences. 
+    Assumes an already pressed profiles database (see funtion above).
+    
+    HMMSCAN = scan a (or multiple) sequence(s) for domains.
+    """
+    
+    domains = []
+    scores = []
+    biases = []
+    ranges = []
+    
+    # make single-sequence FASTA file
+    temp_fasta = open('single_sequence.fasta', 'w')
+    temp_fasta.write('>protein_sequence'+'\n'+sequence+'\n')
+    temp_fasta.close()
+        
+    # scan HMM
+    _, _, scan_res = single_hmmscan_python(hmm_path, pfam_file, 'single_sequence.fasta')
+
+    # fetch domains in the results
+    for line in scan_res:   
+        try:   
+            for hit in line.hits:
+                hsp = hit._items[0] # highest scoring domain
+                aln_start = hsp.query_range[0]
+                aln_stop = hsp.query_range[1]
+
+                if (hit.bitscore >= threshold) & (hit.id not in domains):
+                    domains.append(hit.id)
+                    scores.append(hit.bitscore)
+                    biases.append(hit.bias)
+                    ranges.append((aln_start,aln_stop))
+        except IndexError: # some hits don't have an individual domain hit
+            pass
+    
+    # remove temp fasta file
+    os.remove('single_sequence.fasta')
+
+    return domains, scores, biases, ranges
     
 
 def hmmfetch_python(hmm_path, pfam_file, domains, output_file):
