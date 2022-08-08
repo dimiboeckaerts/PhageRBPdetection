@@ -8,7 +8,7 @@ Read and/or download the manuscript here: https://www.mdpi.com/1999-4915/14/6/13
 
 The repository contains the following code and data:
 1. <ins>RBPdetect_notebook</ins>: the main notebook containing all the analyses that are discussed in the manuscript.
-2. <ins>RBPdetect_protein_embeddings</ins>: notebook for computing protein language embeddings that serve as the feature representation for our machine learning model.
+2. <ins>RBPdetect_protein_embeddings</ins>: notebook for computing protein language embeddings that serve as the feature representation for our machine learning models.
 3. <ins>RBPdetect_make_predictions</ins>: notebook containing the code and explanation to make predictions for sequences of your choice.
 4. <ins>RBPdetect_standalone.py</ins>: a standalone full version of the prediction pipeline (including both our approaches) that can be run from the command line.
 5. <ins>RBPdetect_utils</ins>: Python script containing all the needed functions for the analyses.
