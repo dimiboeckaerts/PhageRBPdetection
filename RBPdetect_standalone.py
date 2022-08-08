@@ -249,7 +249,7 @@ xgb_saved = XGBClassifier()
 xgb_saved.load_model(xgb_file)
 
 # make predictions with the XGBoost model
-score_xgb = xgb_saved.predict_proba(embeddings)[:,1]
+score_xgb = xgb_saved.predict_proba(embeddings_array)[:,1]
 preds_xgb = (score_xgb > 0.5)*1
 
 # save predictions and scores (optionally)
