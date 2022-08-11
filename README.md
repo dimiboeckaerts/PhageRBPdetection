@@ -2,6 +2,8 @@
 
 # PhageRBPdetection
 
+## General information
+
 This is the repository related to our published manuscript in the special issue 'Virus Bioinformatics 2022' in *Viruses*:
 "Identification of phage receptor-binding protein sequences with hidden Markov models and an extreme gradient boosting classifier". 
 Read and/or download the manuscript here: https://www.mdpi.com/1999-4915/14/6/1329.
@@ -15,6 +17,18 @@ The repository contains the following code and data:
 6. <ins>RBPdetect_domains</ins>: deprecated code of initial analyses, available for reference purposes only.
 7. <ins>data</ins>: folder containing the two trained XGBoost models, the collection of RBP-related HMMs and a examples FASTA file of three sequences that are RBPs (should be predicted as 1).
 
-To get started making predictions for your own sequences of choice, simply clone/copy/download this repository and open the *RBPdetect_make_predictions* notebook and follow the instructions. If you are new to Jupyter notebooks, one of the easiest ways to get started is by installing [Anaconda](https://www.anaconda.com/products/individual). Alternatively, you can also make predictions with the *RBPdetect_standalone.py* script from the command line (see the file itself for instructions and needed libraries). However, as computing embeddings is computationally demanding, we do not recommend running the pipeline on a personal computer without sufficient GPU capabilities.
+## Make predictions yourself
+
+To get started making predictions for your own sequences of choice, start by cloning/copying/downloading this repository. From there, you have two options for making predictions.
+
+### 1. Using the RBPdetect_make_predictions notebook
+
+Simply open the *RBPdetect_make_predictions.ipynb* notebook and follow the instructions. If you are new to Jupyter notebooks, one of the easiest ways to get started is by installing [Anaconda](https://www.anaconda.com/products/individual). Currently, this notebook allows you to make predictions for either both parallel approaches separately, as well as the combined approach using both language embeddings and HMM scores in an XGBoost model.
+
+### 2. Using the RBPdetect_standalone script
+
+This is the commandline version of the tool, which can also be used to make predictions. Currently, this tool allows to make predictions for both parallel approaches separately. Instructions are provided in the file itself. Warning: as computing embeddings is computationally demanding, we do not recommend running the pipeline on a personal computer without sufficient GPU capabilities.
+
+## Original datasets
 
 To reproduce our analyses from the manuscript with the originally collected datasets, you can download these datasets from Zenodo at https://doi.org/10.5281/zenodo.6607535.
