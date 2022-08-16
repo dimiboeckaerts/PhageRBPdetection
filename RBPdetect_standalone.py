@@ -241,7 +241,7 @@ domain_results.to_csv(args.dir+'/domains_test_predictions.csv', index=False)
 # ------------------------------------------
 print('Computing embeddings... (this can take a while on a CPU)')
 embeddings = compute_protein_embeddings(fasta_file)
-embeddings_array = np.asarray(embeddings.iloc[:, 2:])
+embeddings_array = np.asarray(embeddings.iloc[:, 1:])
 
 # load trained model
 print('Running XGBoost predictions...')
