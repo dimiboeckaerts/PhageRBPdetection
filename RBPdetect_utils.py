@@ -593,8 +593,8 @@ def RBPdetect_domains_protein(path, pfam_file, fasta_file, N_blocks=[], C_blocks
     bar.close()
 
     # make dataframe
-    detected_RBPs = pd.DataFrame({'identifier':identifiers_list, 'DNASeq':sequences_list, 'N_blocks':N_list, 'C_blocks':C_list, 
-                                'N_ranges':rangeN_list, 'C_ranges':rangeC_list})
+    detected_RBPs = pd.DataFrame({'identifier':identifiers_list, 'ProteinSeq':sequences_list, 'N_blocks':N_list,
+                                  'C_blocks':C_list, 'N_ranges':rangeN_list, 'C_ranges':rangeC_list})
     return detected_RBPs
 
 
