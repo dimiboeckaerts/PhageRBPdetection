@@ -13,7 +13,6 @@ import re
 import json
 import math
 import pandas as pd
-import seaborn as sns
 from tqdm.notebook import tqdm
 from Bio import SeqIO
 from Bio import Entrez
@@ -22,8 +21,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatch
 from Bio.Blast import NCBIWWW, NCBIXML
-import time
-import urllib
 import subprocess
 import numpy as np
 from Bio.SearchIO import HmmerIO

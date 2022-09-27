@@ -8,6 +8,12 @@ without sufficient GPU capabilities. Computing the embedding vector for even a s
 can take 10+ minutes on a regular CPU. You can use the provided notebook in a Google Colab or 
 Kaggle environment instead and work with free GPUs in the cloud.
 
+INSTRUCTIONS:
+1. Prepare a FASTA file with the **protein** sequences you want to make predictions for.
+2. Download HMMER (http://hmmer.org), unzip its contents on your computer and locate this folder (e.g. '/Users/Sally/hmmer-3.3.1'). You can put this folder anywhere you want on your computer, as long as you know where it is.
+3. Install all the necessary Python packages ('Libraries' below, Typically you can install these packages via conda or pip. Often, NumPy, Pandas and Matplotlib come preinstalled.
+4. name the FASTA file 'sequences.fasta' and copy it to the data folder of this repository. In the data folder, the RBPdetect_XGBmodel.json and RBPdetect_phageRBPs.hmm should also be located.
+
 INPUTS:
 --dir: the directory which contains the FASTA file with name 'sequences.fasta', and the HMM file and trained XGBoost model (.json file)
 --hmmer_path: path to HMMER (e.g. /Users/Sally/hmmer-3.3.1)
