@@ -12,16 +12,18 @@ INSTRUCTIONS:
 1. Prepare a FASTA file with the **protein** sequences you want to make predictions for.
 2. Download HMMER (http://hmmer.org), unzip its contents on your computer and locate this folder (e.g. '/Users/Sally/hmmer-3.3.1'). You can put this folder anywhere you want on your computer, as long as you know where it is.
 3. Install all the necessary Python packages ('Libraries' below, Typically you can install these packages via conda or pip. Often, NumPy, Pandas and Matplotlib come preinstalled.
-4. name the FASTA file 'sequences.fasta' and copy it to the data folder of this repository. In the data folder, the RBPdetect_XGBmodel.json and RBPdetect_phageRBPs.hmm should also be located.
+4. Copy your FASTA file to the data folder of this repository. In the data folder, the RBPdetect_XGBmodel.json and RBPdetect_phageRBPs.hmm should also be located.
 
 INPUTS:
---dir: the directory which contains the FASTA file with name 'sequences.fasta', and the HMM file and trained XGBoost model (.json file)
---hmmer_path: path to HMMER (e.g. /Users/Sally/hmmer-3.3.1)
+--dir: the directory which contains the FASTA file, the HMM file and trained XGBoost model (.json file)
+--fasta: name of the FASTA file (e.g. sequences.fasta)
+--out: directory to store output
+--prefix: optional argument to add a prefix to your output for easy tracking 
 
 USAGE FROM CMD LINE:
-python RBPdetect_standalone.py --dir /directory/with/files --hmmer_path /path/to/hmmer
+python RBPdetect_standalone.py --dir /directory/with/files --fasta sequences.fasta --out /output/directory
 
-@author: dimiboeckaerts
+@author: dimiboeckaerts, btemperton
 """
 
 # LIBRARIES
@@ -34,6 +36,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from Bio import SeqIO
+from datetime import datetime
 from Bio.SearchIO import HmmerIO
 from bio_embeddings.embed import ProtTransBertBFDEmbedder
 from xgboost import XGBClassifier
@@ -42,43 +45,37 @@ from xgboost import XGBClassifier
 # PARSE ARGUMENTS
 # ------------------------------------------
 parser = argparse.ArgumentParser()
-parser.add_argument('--dir',dest='dir', required=True)
-parser.add_argument('--hmmer_path',dest='hmmer_path', required=True)
+parser.add_argument('--dir', dest='dir', required=True)
+parser.add_argument('--fasta', dest='fasta', type=str, required=True)
+parser.add_argument('--out', dest='out', required=True)
+now=datetime.now()
+parser.add_argument('--prefix', dest='prefix', type=str, default=now.strftime("%Y-%m-%d"))
 args = parser.parse_args()
 
 
 # FUNCTIONS
 # ------------------------------------------
-def hmmpress_python(hmm_path, pfam_file):
+def hmmpress_python(pfam_file):
     """
     Presses a profiles database, necessary to do scanning.
     """
+    if os.path.exists(f'{pfam_file}.h3i') and os.path.exists(f'{pfam_file}.h3f') and os.path.exists(f'{pfam_file}.h3m') and os.path.exists(f'{pfam_file}.h3p'):
+        print('RPB HMM file appears to be pressed already! Moving on.')
+        return None, None
     
-    # change directory
-    cd_str = 'cd ' + hmm_path
-    press_str = 'hmmpress ' + pfam_file
-    command = cd_str+'; '+press_str
+    command = 'hmmpress ' + pfam_file
     press_process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     press_out, press_err = press_process.communicate()
-
     return press_out, press_err
 
-def single_hmmscan_python(hmm_path, pfam_file, fasta_file):
+def single_hmmscan_python(pfam_file, fasta_file):
     """
     Does a hmmscan for a given FASTA file of one (or multiple) sequences,
     against a given profile database. Assuming an already pressed profiles
     database (see function above).
     
-    INPUT: all paths to the hmm, profiles_db, fasta and results file given as strings.
-            results_file should be a .txt file
-    OUPUT: ...
+    INPUT: paths to the profiles_db and fasta given as strings.
     """
-
-    # change directory
-    cd_str = 'cd ' + hmm_path
-    cd_process = subprocess.Popen(cd_str, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    cd_out, cd_str = cd_process.communicate()
-
     # scan the sequences
     scan_str = 'hmmscan ' + pfam_file + ' ' + fasta_file + ' > hmmscan_out.txt'
     scan_process = subprocess.Popen(scan_str, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -91,12 +88,11 @@ def single_hmmscan_python(hmm_path, pfam_file, fasta_file):
     
     return scan_out, scan_err, scan_res
 
-def RBPdetect_domains_protein(path, pfam_file, fasta_file, N_blocks=[], C_blocks=[], detect_others=True):
+def RBPdetect_domains_protein(pfam_file, fasta_file, N_blocks=[], C_blocks=[], detect_others=True):
     """
     Same function as above but for a protein FASTA file as input!
 
     Inputs:
-    - path: path to HMM software for detection of the domains
     - pfam_file: path to local Pfam database file (string)
     - fasta_file: path to sequences FASTA file (string)
     - N_blocks: list of structural (N-terminal) domains as strings (corresponding to names in Pfam database)
@@ -122,7 +118,7 @@ def RBPdetect_domains_protein(path, pfam_file, fasta_file, N_blocks=[], C_blocks
         temp_fasta.close()
         
         # scan HMM
-        _, _, scan_res = single_hmmscan_python(path, pfam_file, 'single_sequence.fasta')
+        _, _, scan_res = single_hmmscan_python(pfam_file, 'single_sequence.fasta')
 
         # fetch domains in the results
         domains = []; scores = []; biases = []; ranges = []
@@ -200,13 +196,17 @@ def compute_protein_embeddings(fasta_file):
 # ------------------------------------------
 print('Running HMM predictions...')
 
+# create dir if needed
+if not os.path.isdir(args.out):
+    os.makedirs(args.out)
+
 # file names
 pfam_file = args.dir+'/RBPdetect_phageRBPs.hmm'
 xgb_file = args.dir+'/RBPdetect_xgb_model.json'
-fasta_file = args.dir+'/sequences.fasta'
+fasta_file = args.dir+'/'+args.fasta
 
 # press the .hmm file for further use
-output, err = hmmpress_python(args.hmmer_path, pfam_file)
+output, err = hmmpress_python(pfam_file)
 
 # define HMMs to be detected as RBP-related
 N_blocks = ['Phage_T7_tail', 'Tail_spike_N', 'Prophage_tail', 'BppU_N', 'Mtd_N', 
@@ -227,7 +227,7 @@ C_blocks = ['Lipase_GDSL_2', 'Pectate_lyase_3', 'gp37_C', 'Beta_helix', 'Gp58', 
             'Peptidase_S74', 'Phage_fiber_C', 'S_tail_recep_bd', 'CBM_4_9', 'DUF1983', 'DUF3672']
 
 # do domain-based detections
-domain_based_detections = RBPdetect_domains_protein(args.hmmer_path, pfam_file, fasta_file, N_blocks=N_blocks, 
+domain_based_detections = RBPdetect_domains_protein(pfam_file, fasta_file, N_blocks=N_blocks, 
                                                          C_blocks=C_blocks, detect_others=False)
 
 names = [record.id for record in SeqIO.parse(fasta_file, 'fasta')]
@@ -238,9 +238,9 @@ for pid in names:
     else:
         domain_preds.append(0)
 
-# save the domain-based results separately (optionally)
+# save the domain-based results separately
 domain_results = pd.DataFrame(domain_preds, columns=['preds'])
-domain_results.to_csv(args.dir+'/domains_test_predictions.csv', index=False)
+domain_results.to_csv(f'{args.out}/{args.prefix}-domains_test_predictions.csv', index=False)
 
 
 # RUN XGBOOST PREDICTIONS
@@ -258,7 +258,7 @@ xgb_saved.load_model(xgb_file)
 score_xgb = xgb_saved.predict_proba(embeddings_array)[:,1]
 preds_xgb = (score_xgb > 0.5)*1
 
-# save predictions and scores (optionally)
+# save predictions and scores
 xgb_results = pd.concat([pd.DataFrame(preds_xgb, columns=['preds']), 
                         pd.DataFrame(score_xgb, columns=['score'])], axis=1)
-xgb_results.to_csv(args.dir+'/xgboost_test_predictions.csv', index=False)
+xgb_results.to_csv(f'{args.out}/{args.prefix}-xgboost_test_predictions.csv', index=False)
