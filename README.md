@@ -2,6 +2,8 @@
 
 # PhageRBPdetection
 
+**Important notice December 2023:** We have discovered problems with installing the bio-embeddings package on both Kaggle and Colab platforms, resulting in the inability to proceed and make predictions. We aim to resolve this by moving the entire pipeline to ESM-2 in the next weeks. Thank you for understanding.
+
 ## General information
 
 This is the repository related to our published manuscript in the special issue 'Virus Bioinformatics 2022' in *Viruses*:
