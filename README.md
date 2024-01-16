@@ -34,7 +34,7 @@ PhageRBPdetect v3 reaches an improved or stable performance across every metric 
 
 #### 1. Predictions with PhageRBPdetect v3
 
-The easiest way to start making predictions with the streamlined and best-performing model is to make predictions with our [Google Collab notebook](https://colab.research.google.com/drive/1b0DSqMmnEgoXoWW53VxKpT-N8moPU2DA?usp=sharing) and follow the three steps there! You can also run it locally with the `PhageRBPdetect_v3_inference.py` file.
+The easiest way to start making predictions with the streamlined and best-performing model is to make predictions with our [Google Colab notebook](https://colab.research.google.com/drive/1b0DSqMmnEgoXoWW53VxKpT-N8moPU2DA?usp=sharing) and follow the three steps there! You can also run it locally with the `PhageRBPdetect_v3_inference.py` file.
 
 #### 2. Predictions with the older PhageRBPdetect v2 (original work in published manuscript)
 
