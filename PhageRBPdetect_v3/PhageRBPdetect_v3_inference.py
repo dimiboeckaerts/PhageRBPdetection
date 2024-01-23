@@ -3,7 +3,8 @@ PhageRBPdetect (ESM2-fine) - inference
 @author: dimiboeckaerts
 @date: 2023-12-21
 
-SET THE PATHS & FILES BELOW, THEN RUN THE SCRIPT
+FIRST, DOWNLOAD THE MODEL FILE FROM ZENODO: https://zenodo.org/records/10515367 
+THEN, SET THE PATHS & FILES BELOW & RUN THE SCRIPT
 
 INPUTS: a FASTA file with proteins you want to make predictions for, and a fine-tuned ESM-2 model
 OUTPUTS: predictions and scores for each protein in the FASTA file
@@ -23,7 +24,7 @@ Any feedback or questions? Feel free to send me an email: dimi.boeckaerts@gmail.
 # ------------------------------------------
 path = './data'
 fasta_name = 'sequences.fasta'
-model_name = 'PhageRBPdetect_v3_ESMfine' # should be a folder in the path!
+model_name = 'PhageRBPdetect_v3_ESMfineT33' # should be a folder in the path!
 
 
 # 1 - TRAINING THE MODEL
