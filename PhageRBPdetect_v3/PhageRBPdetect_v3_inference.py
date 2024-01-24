@@ -24,8 +24,7 @@ Any feedback or questions? Feel free to send me an email: dimi.boeckaerts@gmail.
 # ------------------------------------------
 path = './data'
 fasta_name = 'sequences.fasta'
-model_name = 'PhageRBPdetect_v3_ESMfineT33' # should be a folder in the path!
-
+model_name = 'RBPdetect_v3_ESMfineT33' # should be a folder in the path!
 
 # 1 - TRAINING THE MODEL
 # ------------------------------------------
@@ -39,9 +38,13 @@ from tqdm.notebook import tqdm
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # initiation the model
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 tokenizer = AutoTokenizer.from_pretrained(path+'/'+model_name)
 model = AutoModelForSequenceClassification.from_pretrained(path+'/'+model_name)
-model.eval().cuda()
+if device == 'cuda':
+    model.eval().cuda()
+else:
+    model.eval()
 
 # make predictions
 sequences = [str(record.seq) for record in SeqIO.parse(path+'/'+fasta_name, 'fasta')]
@@ -50,7 +53,7 @@ names = [record.id for record in SeqIO.parse(path+'/'+fasta_name, 'fasta')]
 predictions = []
 scores = []
 for sequence in tqdm(sequences):
-    encoding = tokenizer(sequence, return_tensors="pt", truncation=True).to('cuda:0')
+    encoding = tokenizer(sequence, return_tensors="pt", truncation=True).to(device)
     with torch.no_grad():
         output = model(**encoding)
         predictions.append(int(output.logits.argmax(-1)))
