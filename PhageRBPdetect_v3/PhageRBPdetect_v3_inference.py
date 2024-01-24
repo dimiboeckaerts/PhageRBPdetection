@@ -34,7 +34,7 @@ import torch
 import pandas as pd
 import numpy as np
 from Bio import SeqIO
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 # initiation the model
