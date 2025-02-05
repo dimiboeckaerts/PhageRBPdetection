@@ -22,9 +22,9 @@ Any feedback or questions? Feel free to send me an email: dimi.boeckaerts@gmail.
 
 # 0 - SET THE PATHS
 # ------------------------------------------
-path = './data'
+path = '../data'
 fasta_name = 'sequences.fasta'
-model_name = 'RBPdetect_v3_ESMfineT33' # should be a folder in the path!
+model_name = 'RBPdetect_v3_ESMfine/RBPdetect_v3_ESMfineT33' # should be a folder in the path!
 
 # 1 - TRAINING THE MODEL
 # ------------------------------------------
@@ -41,7 +41,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 tokenizer = AutoTokenizer.from_pretrained(path+'/'+model_name)
 model = AutoModelForSequenceClassification.from_pretrained(path+'/'+model_name)
-if device == 'cuda':
+if torch.cuda.is_available():
     model.eval().cuda()
 else:
     model.eval()
