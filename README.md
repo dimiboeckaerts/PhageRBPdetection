@@ -37,7 +37,7 @@ PhageRBPdetect v4 reaches an improved or stable performance across every metric 
 
 #### 1. Predictions with PhageRBPdetect v4
 
-The easiest way to start making predictions with the streamlined and best-performing model is to make predictions with our [Google Colab notebook](https://colab.research.google.com/drive/130jbQ0z_kctXBeD-zsCc9O8mloe13YGo?usp=sharing) and follow the three steps there! You can also run it locally with the `PhageRBPdetect_v4_inference.py` file after downloading the finetuned model from Zenodo [here](https://zenodo.org/records/14810759).
+The easiest way to start making predictions with the streamlined and best-performing model is to make predictions with our [Google Colab notebook](https://colab.research.google.com/drive/130jbQ0z_kctXBeD-zsCc9O8mloe13YGo?usp=sharing) and follow the three steps there! You can also run it locally with the `PhageRBPdetect_v4_inference.py` file after downloading the finetuned model from Zenodo [here](https://zenodo.org/records/14810759). New data can be downloaded [here](https://zenodo.org/records/14811426).
 
 #### 2. Predictions with PhageRBPdetect v3
 
