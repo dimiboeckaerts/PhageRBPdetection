@@ -17,8 +17,7 @@ The repository contains the following code and data:
 2. <ins>PhageRBPdetect_v3</ins>: the previous version of our PhageRBPdetect tool, including two _benchmark.py files for comparing performance on the original datasets, a _training.py file to finetune an ESM-2 model with our dataset or sequences of your own choosing and a _inference.py file to make predictions for new sequences using our finetuned model.
 3. <ins>PhageRBPdetect_v2</ins>: all of the code related to our originally published work, including a notebook containing all the analyses (_notebook.ipynb), a notebook to compute ProtTrans embeddings (_protein_embeddings.ipynb), a notebook to make predictions for new sequences (_make_predictions.ipynb), and a standalone version that can be run from the command line (_standalone.py).
 4. <ins>data</ins>: folder containing the two originally trained XGBoost models, the collection of RBP-related HMMs and a examples FASTA file of three sequences that are RBPs (should be predicted as 1).
-5. <ins>2025_data</ins>: folder containing the newest data (2025), collected using the <ins>Data_2025.ipynb</ins> notebook.
-6. <ins>Data_2025.ipynb</ins>: The notebook containing the code used for the new data collection.
+5. <ins>Data_2025.ipynb</ins>: The notebook containing the code used for the new data collection.
 
 ## Benchmarking results
 
